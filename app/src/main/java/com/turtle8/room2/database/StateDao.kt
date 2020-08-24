@@ -12,7 +12,7 @@ interface FragmentStateDao{
     fun update(fragmentState: FragmentState)
 
     @Query("SELECT page_no FROM fragment_state where fragment = :fragment")
-    fun getPageNo(fragment:String):Int
+    fun getPageNo(fragment:String):Int?
 
     @Delete
     fun delete(fragmentState: FragmentState)

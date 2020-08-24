@@ -1,6 +1,5 @@
 package com.turtle8.room2
 
-import androidx.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -8,8 +7,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.viewpager2.widget.ViewPager2
+import com.turtle8.room2.database.FragmentStateDao
+import com.turtle8.room2.database.StateDatabase
 import com.turtle8.room2.databinding.OneFragmentBinding
+import com.turtle8.room2.viewModels.OneViewModel
+import com.turtle8.room2.viewModels.OneViewModelFactory
 
 class OneFragment : Fragment() {
 
@@ -27,14 +32,17 @@ class OneFragment : Fragment() {
     private var bundlePageNo:Int = 0
 
     private lateinit var binding: OneFragmentBinding
-    private val viewModel:OneViewModel by viewModels()
+    private lateinit var viewModel: OneViewModel
+    private lateinit var stateDao:FragmentStateDao
+    private var _position:Int = 0
 
     var tonePageChangeCallback = object:
         ViewPager2.OnPageChangeCallback(){
         override fun onPageSelected(position: Int) {
+            _position = position
             Log.d("OneFragment::tonePageChangeCallBackObj",position.toString())
             //MediaPlayer.create(requireContext(), R.raw.navigation_forward_selection).start()
-            viewModel.position = position //this is always page0 when resumed vp need to load
+            if (position != 0) viewModel.setPage(position) //this is always page0 when resumed vp need to load
         }
     }
 
@@ -46,6 +54,22 @@ class OneFragment : Fragment() {
         }else{
             Log.d(LOG_TAG, "OnActivityCreated savedIS is null!")
         }
+        val application = requireNotNull(this.activity).application
+        stateDao = StateDatabase.getInstance(application).fragmentStateDao
+        val viewModelFactory = OneViewModelFactory(
+            stateDao
+        )
+        viewModel = ViewModelProvider(this, viewModelFactory)
+            .get(OneViewModel::class.java)
+
+        viewModel.pagePositionLiveData.observe(viewLifecycleOwner,
+        Observer {
+            if (it != _position){
+                Log.d(LOG_TAG, "pos from ${_position} to ${it}")
+            binding.viewpager
+                .setCurrentItem(it, false)
+            }
+        })
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,24 +96,24 @@ class OneFragment : Fragment() {
         return binding.root
     }
 
-    override fun onResume() {
-        super.onResume()
-        val pos1 = viewModel.position
-        Log.d(LOG_TAG, "OnResume... ${pos1}")
-        if (pos1 > 0 ){
-            binding.viewpager
-                .setCurrentItem(pos1, false)
-        }
-    }
+//    override fun onResume() {
+//        super.onResume()
+//        val pos1 = viewModel.pagePositionLiveData.value
+//        Log.d(LOG_TAG, "OnResume... ${pos1}")
+//        if (pos1 > 0 ){
+//            binding.viewpager
+//                .setCurrentItem(pos1, false)
+//        }
+//    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        Log.d(LOG_TAG, "OnSaveInstanceState ${viewModel.position}")
-        outState.putInt(Bundle_key_Page, viewModel.position)
+        Log.d(LOG_TAG, "OnSaveInstanceState ${viewModel.pagePositionLiveData.value}")
+        outState.putInt(Bundle_key_Page, viewModel.pagePositionLiveData.value ?: 0 )
     }
 
     override fun onDestroy() {
-        Log.d(LOG_TAG,"onDestroy... ${viewModel.position}")
+        Log.d(LOG_TAG,"onDestroy... ${viewModel.pagePositionLiveData.value}")
         super.onDestroy()
     }
 
