@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
 class OneViewModel(
     private val fragmentStateDao: FragmentStateDao
     //private val savedStateHandle: SavedStateHandle
@@ -16,13 +17,16 @@ class OneViewModel(
 //    private var _position:Int =
 //        savedStateHandle.get<Int>(key_position) ?: 0
 
-    private var _posMutableLiveData = MutableLiveData<Int>()
+    private var _posFromDbMutableLiveData = MutableLiveData<Int>()
+
+
     fun setPage(value:Int){
-        _posMutableLiveData.value = value
+        _posFromDbMutableLiveData.value = value
         viewModelScope.launch {
             insertPage(value)
         }
     }
+
     private suspend fun insertPage(value:Int){
         withContext(Dispatchers.IO){
             fragmentStateDao.insert(
@@ -31,19 +35,19 @@ class OneViewModel(
         }
     }
     val pagePositionLiveData:LiveData<Int>
-    get() = _posMutableLiveData
+    get() = _posFromDbMutableLiveData
 
 
     init {
         Log.d(LOG_TAG, "init...")
         viewModelScope.launch {
-            _posMutableLiveData.value = dbGetPageNo()
+            _posFromDbMutableLiveData.value = dbGetPageNo()
         }
     }
     override fun onCleared() {
         Log.d(LOG_TAG, "onCleared...")
         viewModelScope.launch {
-            fragmentStateDao.insert(FragmentState(LOG_TAG, _posMutableLiveData.value!!))
+            fragmentStateDao.insert(FragmentState(LOG_TAG, _posFromDbMutableLiveData.value!!))
         }
         super.onCleared()
     }
@@ -58,12 +62,12 @@ class OneViewModel(
     val fragmentStateListLiveData: LiveData<List<FragmentState>>
     get() = fragmentStateDao.listStates()
 
-    private suspend fun roomSavePage(){
-        Log.d(LOG_TAG, "roomSavePage ${_posMutableLiveData.value}")
-        withContext(Dispatchers.IO){
-            fragmentStateDao.insert(FragmentState(LOG_TAG, _posMutableLiveData.value!!))
-        }
-    }
+//    private suspend fun roomSavePage(){
+//        Log.d(LOG_TAG, "roomSavePage ${_posFromDbMutableLiveData.value}")
+//        withContext(Dispatchers.IO){
+//            fragmentStateDao.insert(FragmentState(LOG_TAG, _posFromDbMutableLiveData.value!!))
+//        }
+//    }
 
 //    var position:Int
 //    get()= _position
