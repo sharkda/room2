@@ -64,10 +64,13 @@ class OneFragment : Fragment() {
 
         viewModel.pagePositionLiveData.observe(viewLifecycleOwner,
         Observer {
+
             if (it != _position){
-                Log.d(LOG_TAG, "pos from ${_position} to ${it}")
+                Log.d(LOG_TAG, "LiveData Observer pos from ${_position} to ${it}")
             binding.viewpager
                 .setCurrentItem(it, false)
+            }else{
+                Log.d(LOG_TAG, "liveData observer ${it}")
             }
         })
     }
